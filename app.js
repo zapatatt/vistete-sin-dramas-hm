@@ -1,43 +1,24 @@
-const ADMIN_PASS = "admin123";
 const MONEDA = "S/";
+const ADMIN_PASS = "admin123";
 
-function obtenerProductos() {
-  let guardados = localStorage.getItem("vistete_productos");
-  if (guardados) {
-    try { return JSON.parse(guardados); }
-    catch { localStorage.removeItem("vistete_productos"); }
-  }
-  const ejemplo = [
-    {
-      id: crypto.randomUUID(),
-      nombre: "Camiseta Pixel",
-      descripcion: "Camiseta de algodón, estilo pixel art.",
-      precio: 20,
-      imagen: "https://i.ibb.co/8rQjzHD/camiseta-pixel.png",
-      categoria: "Ropa"
-    }
-  ];
-  localStorage.setItem("vistete_productos", JSON.stringify(ejemplo));
-  return ejemplo;
-}
-function guardarProductos(productos) {
-  localStorage.setItem("vistete_productos", JSON.stringify(productos));
+// Obtiene todos los productos desde Firestore
+async function obtenerProductos() {
+  const snapshot = await db.collection("productos").orderBy("nombre").get();
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
-function obtenerFavoritos() {
-  return JSON.parse(localStorage.getItem("vistete_favoritos")) || [];
-}
-function guardarFavoritos(favs) {
-  localStorage.setItem("vistete_favoritos", JSON.stringify(favs));
+// Guarda un producto en Firestore
+async function guardarProductoFirestore(producto) {
+  await db.collection("productos").add(producto);
 }
 
-function mostrarProductos() {
-  const productos = obtenerProductos();
+// Muestra productos en la página
+async function mostrarProductos() {
+  const productos = await obtenerProductos();
   const favoritos = obtenerFavoritos();
   const contenedor = document.getElementById('productos');
   contenedor.innerHTML = '';
   productos.forEach(producto => {
-    if (!producto.id) return;
     const esFavorito = favoritos.includes(producto.id);
     const div = document.createElement('div');
     div.className = 'producto';
@@ -73,6 +54,13 @@ function mostrarProductos() {
   actualizarContadorFavoritos();
 }
 
+// Guardar favoritos en localStorage (puedes mantenerlo local)
+function obtenerFavoritos() {
+  return JSON.parse(localStorage.getItem("vistete_favoritos")) || [];
+}
+function guardarFavoritos(favs) {
+  localStorage.setItem("vistete_favoritos", JSON.stringify(favs));
+}
 function toggleFavorito(id) {
   let favoritos = obtenerFavoritos();
   if (favoritos.includes(id)) {
@@ -85,9 +73,8 @@ function toggleFavorito(id) {
   mostrarFavoritos();
   actualizarContadorFavoritos();
 }
-
-function mostrarFavoritos() {
-  const productos = obtenerProductos();
+async function mostrarFavoritos() {
+  const productos = await obtenerProductos();
   const favoritos = obtenerFavoritos();
   const contenedor = document.getElementById('favoritos-lista');
   const vacio = document.getElementById('sin-favoritos');
@@ -137,39 +124,9 @@ function actualizarContadorFavoritos() {
   contador.textContent = favoritos.length > 0 ? favoritos.length : "";
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  mostrarProductos();
-  mostrarFavoritos();
-  mostrarVista('productos');
-  actualizarContadorFavoritos();
-});
-
-function activarNav(btn) {
-  document.querySelectorAll('.pixel-btn-nav').forEach(b => b.classList.remove('activo'));
-  btn.classList.add('activo');
-}
-
-function loginAdmin() {
-  const pass = document.getElementById('admin-pass').value;
-  if (pass === ADMIN_PASS) {
-    document.getElementById('admin-login').style.display = 'none';
-    document.getElementById('admin-panel').style.display = 'block';
-    document.getElementById('admin-bienvenida').textContent = "Ingresado como admin";
-    if(typeof autoFormularioAdmin === "function") autoFormularioAdmin();
-    document.getElementById('admin-error').textContent = '';
-  } else {
-    document.getElementById('admin-error').textContent = 'Contraseña incorrecta';
-  }
-}
-function logoutAdmin() {
-  document.getElementById('admin-login').style.display = '';
-  document.getElementById('admin-panel').style.display = 'none';
-  document.getElementById('admin-pass').value = '';
-  document.getElementById('admin-bienvenida').textContent = "";
-}
-
-function mostrarModalProducto(id) {
-  const productos = obtenerProductos();
+// Modal producto (igual que antes)
+async function mostrarModalProducto(id) {
+  const productos = await obtenerProductos();
   const prod = productos.find(p => p.id === id);
   if (!prod) return;
   let modal = document.getElementById('modal-producto');
@@ -206,6 +163,7 @@ function cerrarModalProducto() {
   }
 }
 
+// Mostrar mensaje de éxito
 function mostrarMensajeExito(texto) {
   let msg = document.getElementById("mensaje-exito");
   if (!msg) {
@@ -227,3 +185,133 @@ function mostrarMensajeExito(texto) {
   msg.style.display = "block";
   setTimeout(() => { msg.style.display = "none"; }, 2500);
 }
+
+// ADMIN: Agregar productos
+function agregarFormularioProducto() {
+  const contenedor = document.getElementById("contenedor-formularios");
+  const div = document.createElement("div");
+  div.className = "formulario-producto";
+  div.innerHTML = `
+    <input class="pixel-input" type="text" placeholder="Nombre" autocomplete="off">
+    <input class="pixel-input" type="text" placeholder="Descripción" autocomplete="off">
+    <input class="pixel-input" type="number" placeholder="Precio (S/)" min="1">
+    <input class="pixel-input" type="file" accept="image/*">
+    <select class="pixel-input">
+      <option value="">Categoría...</option>
+      <option value="Ropa">Ropa</option>
+      <option value="Accesorios">Accesorios</option>
+      <option value="Calzado">Calzado</option>
+      <option value="Otro">Otro</option>
+    </select>
+    <button class="pixel-btn" type="button">Guardar producto</button>
+    <hr style="margin:1em 0;">
+  `;
+  const btnGuardar = div.querySelector("button");
+  btnGuardar.onclick = async function() {
+    await guardarEsteProducto(div, btnGuardar);
+  };
+  contenedor.appendChild(div);
+}
+
+function autoFormularioAdmin() {
+  const contenedor = document.getElementById("contenedor-formularios");
+  contenedor.innerHTML = '';
+  agregarFormularioProducto();
+}
+
+async function guardarEsteProducto(div, btn) {
+  const inputs = div.querySelectorAll(".pixel-input");
+  const nombre = inputs[0].value.trim();
+  const descripcion = inputs[1].value.trim();
+  const precio = parseFloat(inputs[2].value.trim());
+  const imagenInput = inputs[3];
+  const imagenFile = imagenInput.files[0];
+  const categoria = inputs[4].value.trim();
+
+  // Validación de imagen
+  if (imagenFile && imagenFile.size > 120 * 1024) {
+    alert("La imagen es demasiado grande. Usa una imagen menor a 120 KB.");
+    btn.disabled = false;
+    btn.textContent = "Guardar producto";
+    return;
+  }
+  if (!nombre || !descripcion || isNaN(precio) || !imagenFile || !categoria) {
+    alert("Completa todos los campos correctamente.");
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = "Guardando...";
+
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    try {
+      const imagen = e.target.result;
+      await guardarProductoFirestore({
+        nombre,
+        descripcion,
+        precio,
+        imagen,
+        categoria
+      });
+      mostrarMensajeExito("Producto agregado exitosamente.");
+      div.remove();
+      agregarFormularioProducto();
+      await mostrarProductos();
+      if (typeof mostrarFavoritos === "function") mostrarFavoritos();
+    } catch (err) {
+      alert("Error al guardar el producto: " + err.message);
+      btn.disabled = false;
+      btn.textContent = "Guardar producto";
+    }
+  };
+  reader.onerror = function() {
+    alert("Error leyendo la imagen. Intenta con otra imagen o revisa el archivo.");
+    btn.disabled = false;
+    btn.textContent = "Guardar producto";
+  };
+  reader.readAsDataURL(imagenFile);
+}
+
+// ADMIN: Login/logout
+function loginAdmin() {
+  const pass = document.getElementById('admin-pass').value;
+  if (pass === ADMIN_PASS) {
+    document.getElementById('admin-login').style.display = 'none';
+    document.getElementById('admin-panel').style.display = 'block';
+    document.getElementById('admin-bienvenida').textContent = "Ingresado como admin";
+    if(typeof autoFormularioAdmin === "function") autoFormularioAdmin();
+    document.getElementById('admin-error').textContent = '';
+  } else {
+    document.getElementById('admin-error').textContent = 'Contraseña incorrecta';
+  }
+}
+function logoutAdmin() {
+  document.getElementById('admin-login').style.display = '';
+  document.getElementById('admin-panel').style.display = 'none';
+  document.getElementById('admin-pass').value = '';
+  document.getElementById('admin-bienvenida').textContent = "";
+}
+
+// Mostrar la vista
+function mostrarVista(vista) {
+  document.getElementById('vista-productos').classList.add('oculto');
+  document.getElementById('vista-favoritos').classList.add('oculto');
+  document.getElementById('vista-admin').classList.add('oculto');
+  if(vista === 'productos') document.getElementById('vista-productos').classList.remove('oculto');
+  if(vista === 'favoritos') document.getElementById('vista-favoritos').classList.remove('oculto');
+  if(vista === 'admin') {
+    document.getElementById('vista-admin').classList.remove('oculto');
+    autoFormularioAdmin();
+  }
+}
+function activarNav(btn) {
+  document.querySelectorAll('.pixel-btn-nav').forEach(b => b.classList.remove('activo'));
+  btn.classList.add('activo');
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  await mostrarProductos();
+  await mostrarFavoritos();
+  mostrarVista('productos');
+  actualizarContadorFavoritos();
+});
