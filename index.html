@@ -57,20 +57,33 @@
     <span class="whatsapp-text">Unirse WhatsApp</span>
   </a>
   
-  <!-- FIREBASE SDK: Reemplaza los valores del objeto firebaseConfig por los de tu proyecto -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script>
-    const firebaseConfig = {
-      apiKey: "TU_API_KEY",
-      authDomain: "TU_PROYECTO_ID.firebaseapp.com",
-      projectId: "TU_PROYECTO_ID",
-      storageBucket: "TU_PROYECTO_ID.appspot.com",
-      messagingSenderId: "TU_SENDER_ID",
-      appId: "TU_APP_ID"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+  <!-- Incluye los SDKs de Firebase para web -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<script>
+  // Configuración de tu proyecto Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyCKzCLPjq2KvWYKimLer57Zgx-yvkdAi_Y",
+    authDomain: "vistetesindramas.firebaseapp.com",
+    projectId: "vistetesindramas",
+    storageBucket: "vistetesindramas.appspot.com",
+    messagingSenderId: "228622417167",
+    appId: "1:228622417167:web:eaa3c693d1e6632239927a",
+    measurementId: "G-8E6KWNW30L"
+  };
+
+  // Inicializa Firebase
+  firebase.initializeApp(firebaseConfig);
+
+  // Inicializa Firestore
+  const db = firebase.firestore();
+
+  // Ejemplo: guardar un documento en una colección llamada "prueba"
+  // db.collection("prueba").add({ mensaje: "¡Hola desde Firestore!" })
+  //   .then(() => console.log("Documento agregado"))
+  //   .catch(error => console.error("Error al agregar documento:", error));
+</script>
   </script>
 
   <!-- TU CÓDIGO PRINCIPAL -->
