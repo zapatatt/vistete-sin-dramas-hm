@@ -25,12 +25,12 @@ async function mostrarProductos() {
     div.setAttribute('data-id', producto.id);
     div.innerHTML = `
       <img src="${producto.imagen}" alt="${producto.nombre}">
-      <div class="categoria">${producto.categoria}</div>
+      <div class="categoria">${producto.categoria || ''}</div>
       <div class="titulo-fav">
         <h3>${producto.nombre}</h3>
         <span class="estrella-fav${esFavorito ? ' favorito' : ''}" title="${esFavorito ? 'Quitar de favoritos' : 'Agregar a favoritos'}" data-id="${producto.id}">${esFavorito ? '★' : '☆'}</span>
       </div>
-      <p>${producto.descripcion}</p>
+      <p>${producto.descripcion || ''}</p>
       <div class="precio">${MONEDA} ${producto.precio}</div>
     `;
     contenedor.appendChild(div);
@@ -91,12 +91,12 @@ async function mostrarFavoritos() {
     div.setAttribute('data-id', producto.id);
     div.innerHTML = `
       <img src="${producto.imagen}" alt="${producto.nombre}">
-      <div class="categoria">${producto.categoria}</div>
+      <div class="categoria">${producto.categoria || ''}</div>
       <div class="titulo-fav">
         <h3>${producto.nombre}</h3>
         <span class="estrella-fav favorito" title="Quitar de favoritos" data-id="${producto.id}">★</span>
       </div>
-      <p>${producto.descripcion}</p>
+      <p>${producto.descripcion || ''}</p>
       <div class="precio">${MONEDA} ${producto.precio}</div>
     `;
     contenedor.appendChild(div);
